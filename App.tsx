@@ -46,6 +46,13 @@ const App: React.FC = () => {
     setLoading(false);
   };
 
+  const refreshLogs = async () => {
+    if (currentUser) {
+      const updatedLogs = await CloudDB.getAllLogs(currentUser.id);
+      setLogs(updatedLogs);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('life_ceo_session');
     setCurrentUser(null);
@@ -85,7 +92,12 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col text-slate-100 font-sans selection:bg-sky-500/30">
       <main className="flex-1 animate-in fade-in duration-700">
         {activeTab === 'home' && (
-          <Floor profile={profile} topics={topics} date={todayStr} />
+          <Floor 
+            profile={profile} 
+            topics={topics} 
+            date={todayStr} 
+            onRefreshLogs={refreshLogs} 
+          />
         )}
         {activeTab === 'dashboard' && <Dashboard logs={logs} topics={topics} />}
         {activeTab === 'restructuring' && (
@@ -111,10 +123,9 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Navegação Life CEO Glass */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/60 backdrop-blur-[18px] border-t border-slate-800/40 flex justify-around items-center px-4 h-24 z-50 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
         <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<LayoutGrid />} label="Fábrica" />
-        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<BarChart3 />} label="Painel" />
+        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<BarChart3 />} label="Dados" />
         <NavButton active={activeTab === 'restructuring'} onClick={() => setActiveTab('restructuring')} icon={<Settings2 />} label="Gestão" />
         <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserCircle2 />} label="CEO" />
       </nav>

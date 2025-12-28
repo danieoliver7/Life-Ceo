@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { UserProfile, DayLog } from '../types';
 import { CloudDB } from '../services/database';
-import { LogOut, Trophy, Target, Building2, User, Camera, Download, Upload, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { LogOut, Trophy, Target, Building2, User, Camera, Download, Upload, ShieldCheck, CheckCircle2, Clock } from 'lucide-react';
 
 interface ProfileProps {
   profile: UserProfile;
@@ -15,10 +15,12 @@ const Profile: React.FC<ProfileProps> = ({ profile, logs, onLogout, onUpdateProf
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success'>('idle');
+  const [isEditingTime, setIsEditingTime] = useState(false);
 
-  const lifetimeAvg = logs.length > 0 
-    ? (logs.reduce((acc, l) => acc + l.score, 0) / logs.length).toFixed(1)
-    : "0.0";
+  // Métrica consolidada de performance (0-10)
+  const legacyScore = logs.length > 0 
+    ? Math.floor(logs.reduce((acc, l) => acc + l.score, 0) / logs.length / 10)
+    : 0;
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -63,6 +65,10 @@ const Profile: React.FC<ProfileProps> = ({ profile, logs, onLogout, onUpdateProf
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdateProfile({ ...profile, dailyCheckInTime: e.target.value });
   };
 
   return (
@@ -129,9 +135,9 @@ const Profile: React.FC<ProfileProps> = ({ profile, logs, onLogout, onUpdateProf
 
       {/* Legacy Card */}
       <div className="ceo-glass rounded-[3rem] p-10 shadow-[0_40px_80px_rgba(0,0,0,0.5)] text-center space-y-4 relative overflow-hidden group border-white/5">
-        <p className="text-slate-500 font-bold uppercase tracking-[0.25em] text-[10px] relative z-10">Métrica de Legado Vitalício</p>
+        <p className="text-slate-500 font-bold uppercase tracking-[0.25em] text-[10px] relative z-10">Nota dos Setores</p>
         <div className="flex flex-col items-center relative z-10">
-          <span className="text-8xl font-black text-white tracking-tighter drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">{lifetimeAvg}</span>
+          <span className="text-8xl font-black text-white tracking-tighter drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">{legacyScore}</span>
           <div className="flex items-center gap-3 mt-4 bg-white/5 px-6 py-2 rounded-full border border-white/10 backdrop-blur-md">
             <Trophy className="text-amber-400" size={18} />
             <span className="text-sky-300 font-black uppercase tracking-widest text-[9px]">Status: Gestão de Elite</span>
@@ -140,15 +146,34 @@ const Profile: React.FC<ProfileProps> = ({ profile, logs, onLogout, onUpdateProf
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="ceo-glass p-6 rounded-[2rem] shadow-xl border-white/5 space-y-2 group hover:border-sky-500/30 transition-all text-center">
+        {/* Botão interativo para editar Check-in */}
+        <button 
+          onClick={() => setIsEditingTime(true)}
+          className="ceo-glass p-6 rounded-[2rem] shadow-xl border-white/5 space-y-2 group hover:border-sky-500/30 transition-all text-center relative overflow-hidden"
+        >
           <Target className="text-sky-400 mx-auto mb-1 group-hover:scale-110 transition-transform" size={24} />
-          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Check-in</p>
-          <p className="font-bold text-slate-200 text-xl">{profile.dailyCheckInTime}</p>
-        </div>
+          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Janela Check-in</p>
+          {isEditingTime ? (
+            <input 
+              type="time" 
+              autoFocus
+              value={profile.dailyCheckInTime}
+              onChange={handleTimeChange}
+              onBlur={() => setIsEditingTime(false)}
+              className="w-full bg-slate-950/50 border-none rounded-lg p-1 text-center font-bold text-slate-200 text-xl focus:ring-0 outline-none"
+            />
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <p className="font-bold text-slate-200 text-xl">{profile.dailyCheckInTime}</p>
+              <Clock size={12} className="text-slate-600" />
+            </div>
+          )}
+        </button>
+
         <div className="ceo-glass p-6 rounded-[2rem] shadow-xl border-white/5 space-y-2 group hover:border-indigo-500/30 transition-all text-center">
           <Building2 className="text-indigo-400 mx-auto mb-1 group-hover:scale-110 transition-transform" size={24} />
-          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Unidades</p>
-          <p className="font-bold text-slate-200 text-xl">10 Setores</p>
+          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Setores Ativos</p>
+          <p className="font-bold text-slate-200 text-xl">{profile.topicsCount} Áreas</p>
         </div>
       </div>
 

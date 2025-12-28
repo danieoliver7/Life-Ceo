@@ -43,7 +43,6 @@ const Restructuring: React.FC<RestructuringProps> = ({ profile, onUpdateTopics }
   const addAction = () => {
     const trimmed = newActionName.trim();
     if (!trimmed) return;
-    // Fix: removed 'completed' property from SubAction to match updated interface
     const newAction: SubAction = {
       id: Math.random().toString(36).substr(2, 9),
       name: trimmed
@@ -65,6 +64,7 @@ const Restructuring: React.FC<RestructuringProps> = ({ profile, onUpdateTopics }
           userId: profile.userId,
           name: newDeptName.trim(), 
           goal: "Nova meta estratégica corporativa", 
+          targetScore: 100,
           actions: [] 
         }
       : t
@@ -85,7 +85,7 @@ const Restructuring: React.FC<RestructuringProps> = ({ profile, onUpdateTopics }
         <AlertCircle className="text-blue-400 shrink-0 mt-0.5" size={24} />
         <p className="text-xs text-blue-200/70 leading-relaxed font-medium">
           <span className="font-black text-blue-400 uppercase tracking-widest block mb-1">Diretriz Organizacional:</span> 
-          O ecossistema Life CEO exige exatamente 10 departamentos ativos. A substituição garante a evolução sem perda de foco.
+          O ecossistema Life CEO exige exatamente {profile.topicsCount} departamentos ativos. A substituição garante a evolução sem perda de foco.
         </p>
       </div>
 

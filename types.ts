@@ -17,6 +17,7 @@ export interface Topic {
   userId: string;
   name: string;
   goal: string;
+  targetScore: number; // Meta quantitativa diária (0-100)
   actions: SubAction[];
 }
 
@@ -24,8 +25,8 @@ export interface LogEntry {
   id: string;
   logId: string;
   topicId: string;
-  actionId?: string; // Se vier do banco
-  name: string; // Nome (essencial para ad-hoc)
+  actionId?: string;
+  name: string;
   isCompleted: boolean;
   isAdHoc: boolean;
 }
@@ -33,9 +34,8 @@ export interface LogEntry {
 export interface DayLog {
   id: string;
   userId: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   score: number;
-  // Fix: added topicScores and completedActions used in excelService and Dashboard
   topicScores: Record<string, number>;
   completedActions: string[];
 }
@@ -46,8 +46,8 @@ export interface UserProfile {
   photoUrl: string;
   onboardingComplete: boolean;
   dailyCheckInTime: string;
-  // Fix: added topics which is expected in Onboarding and App
   topics: Topic[];
+  topicsCount: number;
 }
 
 export type AppTab = 'home' | 'dashboard' | 'restructuring' | 'profile';
