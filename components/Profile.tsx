@@ -1,74 +1,166 @@
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { UserProfile, DayLog } from '../types';
-import { LogOut, Trophy, Target, Building2, User } from 'lucide-react';
+import { CloudDB } from '../services/database';
+import { LogOut, Trophy, Target, Building2, User, Camera, Download, Upload, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface ProfileProps {
   profile: UserProfile;
   logs: DayLog[];
   onLogout: () => void;
+  onUpdateProfile: (newProfile: UserProfile) => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ profile, logs, onLogout }) => {
+const Profile: React.FC<ProfileProps> = ({ profile, logs, onLogout, onUpdateProfile }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'success'>('idle');
+
   const lifetimeAvg = logs.length > 0 
     ? (logs.reduce((acc, l) => acc + l.score, 0) / logs.length).toFixed(1)
     : "0.0";
 
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        onUpdateProfile({ ...profile, photoUrl: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleExportBackup = async () => {
+    const backup = await CloudDB.exportFullBackup();
+    const blob = new Blob([backup], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `LifeCEO_Backup_${profile.name}_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    setSyncStatus('success');
+    setTimeout(() => setSyncStatus('idle'), 3000);
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const success = await CloudDB.importFullBackup(reader.result as string);
+        if (success) {
+          alert("Backup restaurado com sucesso! O aplicativo irá reiniciar.");
+          window.location.reload();
+        } else {
+          alert("Falha ao restaurar backup. Verifique o arquivo.");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
-    <div className="pb-28 pt-8 px-4 space-y-10 max-w-2xl mx-auto">
-      <header className="flex flex-col items-center gap-5 text-center">
-        <div className="w-28 h-28 rounded-[2.5rem] bg-slate-800 border-4 border-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative group transition-transform duration-500 hover:scale-105">
-          <img src={profile.photoUrl} alt="CEO" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all" />
-          <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
-            <User className="text-white" size={32} />
+    <div className="pb-32 pt-12 px-6 space-y-10 max-w-2xl mx-auto">
+      <header className="flex flex-col items-center gap-6 text-center">
+        <div className="relative group cursor-pointer" onClick={handleImageClick}>
+          <div className="absolute inset-0 bg-sky-400/20 blur-[30px] rounded-full group-hover:bg-sky-400/40 transition-all duration-700"></div>
+          <div className="w-32 h-32 rounded-[3rem] bg-slate-900 border-4 border-slate-950 shadow-2xl overflow-hidden relative transition-transform duration-500 group-hover:scale-105">
+            <img 
+              src={profile.photoUrl || `https://picsum.photos/seed/${profile.name}/200/200`} 
+              alt="CEO" 
+              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
+            />
+            <div className="absolute inset-0 bg-sky-500/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white">
+              <Camera size={24} className="mb-1" />
+              <span className="text-[8px] font-black uppercase tracking-widest">Alterar</span>
+            </div>
           </div>
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
         </div>
-        <div className="space-y-1">
-          <h1 className="text-4xl font-black text-white tracking-tight">{profile.name}</h1>
-          <p className="text-blue-400 font-black uppercase tracking-[0.3em] text-[10px]">C.E.O. & Fundador da Vida Inc.</p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-black text-white tracking-tighter uppercase">{profile.name}</h1>
+          <p className="ceo-gradient-text font-black uppercase tracking-[0.4em] text-[9px]">Life CEO Operating System</p>
         </div>
       </header>
 
-      <div className="bg-slate-900 rounded-[3rem] p-10 shadow-2xl border border-slate-800 text-center space-y-4 relative overflow-hidden group">
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-[80px] group-hover:bg-blue-500/20 transition-all duration-700"></div>
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-[80px]"></div>
+      {/* Cloud & Backup System */}
+      <div className="ceo-glass rounded-[2.5rem] p-8 border-sky-500/10 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="text-sky-400" size={20} />
+            <h3 className="text-xs font-black text-white uppercase tracking-widest">Segurança de Dados</h3>
+          </div>
+          {syncStatus === 'success' && (
+            <div className="flex items-center gap-2 text-emerald-400 animate-in fade-in slide-in-from-right-2">
+              <CheckCircle2 size={14} />
+              <span className="text-[9px] font-bold uppercase">Backup Gerado</span>
+            </div>
+          )}
+        </div>
         
-        <p className="text-slate-500 font-black uppercase tracking-widest text-[10px] relative z-10">Métrica de Legado Vitalício</p>
+        <div className="grid grid-cols-2 gap-4">
+          <button 
+            onClick={handleExportBackup}
+            className="flex flex-col items-center gap-3 bg-slate-900/50 border border-white/5 p-5 rounded-2xl hover:bg-slate-800 transition-all group"
+          >
+            <Download size={24} className="text-sky-400 group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Exportar Dados</span>
+          </button>
+          
+          <button 
+            onClick={() => backupInputRef.current?.click()}
+            className="flex flex-col items-center gap-3 bg-slate-900/50 border border-white/5 p-5 rounded-2xl hover:bg-slate-800 transition-all group"
+          >
+            <Upload size={24} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Importar Dados</span>
+          </button>
+          <input type="file" ref={backupInputRef} onChange={handleImportBackup} accept=".json" className="hidden" />
+        </div>
+        <p className="text-[8px] text-slate-600 text-center uppercase font-bold tracking-tighter leading-relaxed">
+          Os dados são salvos localmente. Use a exportação para garantir a persistência eterna entre dispositivos ou atualizações do sistema.
+        </p>
+      </div>
+
+      {/* Legacy Card */}
+      <div className="ceo-glass rounded-[3rem] p-10 shadow-[0_40px_80px_rgba(0,0,0,0.5)] text-center space-y-4 relative overflow-hidden group border-white/5">
+        <p className="text-slate-500 font-bold uppercase tracking-[0.25em] text-[10px] relative z-10">Métrica de Legado Vitalício</p>
         <div className="flex flex-col items-center relative z-10">
-          <span className="text-8xl font-black text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">{lifetimeAvg}</span>
-          <div className="flex items-center gap-3 mt-4 bg-slate-800/50 px-6 py-2 rounded-full border border-slate-700/50 shadow-inner">
+          <span className="text-8xl font-black text-white tracking-tighter drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">{lifetimeAvg}</span>
+          <div className="flex items-center gap-3 mt-4 bg-white/5 px-6 py-2 rounded-full border border-white/10 backdrop-blur-md">
             <Trophy className="text-amber-400" size={18} />
-            <span className="text-slate-400 font-black uppercase tracking-widest text-[9px]">Status: Gestão de Elite</span>
+            <span className="text-sky-300 font-black uppercase tracking-widest text-[9px]">Status: Gestão de Elite</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
-        <div className="bg-slate-900 p-6 rounded-[2rem] shadow-xl border border-slate-800 space-y-2 group transition-all hover:border-blue-500/30">
-          <Target className="text-blue-500 mb-2 group-hover:scale-110 transition-transform" size={24} />
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Check-in Estratégico</p>
-          <p className="font-black text-slate-200 text-xl">{profile.dailyCheckInTime}</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="ceo-glass p-6 rounded-[2rem] shadow-xl border-white/5 space-y-2 group hover:border-sky-500/30 transition-all text-center">
+          <Target className="text-sky-400 mx-auto mb-1 group-hover:scale-110 transition-transform" size={24} />
+          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Check-in</p>
+          <p className="font-bold text-slate-200 text-xl">{profile.dailyCheckInTime}</p>
         </div>
-        <div className="bg-slate-900 p-6 rounded-[2rem] shadow-xl border border-slate-800 space-y-2 group transition-all hover:border-indigo-500/30">
-          <Building2 className="text-indigo-500 mb-2 group-hover:scale-110 transition-transform" size={24} />
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Setores Controlados</p>
-          <p className="font-black text-slate-200 text-xl">10 <span className="text-slate-700 text-sm">/ 10</span></p>
+        <div className="ceo-glass p-6 rounded-[2rem] shadow-xl border-white/5 space-y-2 group hover:border-indigo-500/30 transition-all text-center">
+          <Building2 className="text-indigo-400 mx-auto mb-1 group-hover:scale-110 transition-transform" size={24} />
+          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Unidades</p>
+          <p className="font-bold text-slate-200 text-xl">10 Setores</p>
         </div>
       </div>
 
       <button 
-        onClick={() => {
-          if (confirm("Deseja encerrar a sessão atual? Seus dados estão salvos no banco de dados local.")) {
-            onLogout();
-          }
-        }}
-        className="w-full bg-slate-900 border border-red-500/20 text-red-400 font-black py-5 rounded-[2rem] hover:bg-red-500/10 hover:border-red-500/40 transition-all flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest text-[11px] active:scale-95"
+        onClick={onLogout}
+        className="w-full bg-slate-900 border border-rose-500/20 text-rose-500 font-bold py-5 rounded-[2rem] hover:bg-rose-500/10 hover:border-rose-500/40 transition-all flex items-center justify-center gap-4 shadow-xl uppercase tracking-widest text-[11px] active:scale-95"
       >
-        <LogOut size={20} /> Encerrar Sessão do CEO
+        <LogOut size={20} /> Sair do App
       </button>
 
-      <footer className="text-center pb-8 pt-4">
-        <p className="text-[9px] text-slate-700 font-black uppercase tracking-[0.5em] opacity-50">Life CEO Engine v1.0 • Database Active</p>
+      <footer className="text-center pb-6">
+        <p className="text-[9px] text-slate-700 font-bold uppercase tracking-[0.5em] opacity-40">Life CEO v2.0 • Data Sovereignty Active</p>
       </footer>
     </div>
   );

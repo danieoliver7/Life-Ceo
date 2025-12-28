@@ -1,9 +1,8 @@
 
-import React, { useState } from 'react';
-// Fix: corrected import to use CloudDB as defined in services/database.ts
+import React, { useState, useRef } from 'react';
 import { CloudDB } from '../services/database';
 import { User as UserType } from '../types';
-import { Building2, Lock, User, ArrowRight, ShieldCheck, Briefcase } from 'lucide-react';
+import { Building2, Lock, User, ArrowRight, ShieldCheck, Briefcase, Upload } from 'lucide-react';
 
 interface AuthProps {
   onLogin: (user: UserType) => void;
@@ -15,118 +14,147 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [ceoName, setCeoName] = useState('');
   const [error, setError] = useState('');
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (isLogin) {
-      // Fix: call login on CloudDB
-      const user = await CloudDB.login(username, password);
-      if (user) onLogin(user);
-      else setError('Credenciais inválidas ou conta não encontrada.');
-    } else {
-      if (!ceoName.trim()) {
-        setError('O nome do CEO é obrigatório para o registro.');
-        return;
+    try {
+      if (isLogin) {
+        const user = await CloudDB.login(username, password);
+        if (user) onLogin(user);
+        else setError('Acesso negado. Credenciais inválidas.');
+      } else {
+        if (!ceoName.trim()) {
+          setError('Defina o nome do CEO líder.');
+          return;
+        }
+        const user = await CloudDB.register(username, password, ceoName);
+        if (user) onLogin(user);
+        else setError('Este ID já está em uso no sistema.');
       }
-      // Fix: call register on CloudDB
-      const user = await CloudDB.register(username, password, ceoName);
-      if (user) onLogin(user);
-      else setError('Este nome de usuário já está em uso.');
+    } catch (err) {
+      setError('Falha crítica na conexão.');
+    }
+  };
+
+  const handleQuickImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const success = await CloudDB.importFullBackup(reader.result as string);
+        if (success) {
+          alert("Banco de dados restaurado. Use seu ID anterior para entrar.");
+          window.location.reload();
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8 animate-in fade-in zoom-in-95 duration-500">
-        <div className="text-center space-y-3">
-          <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/20 mb-6">
-            <Building2 size={40} className="text-white" />
+    <div className="h-screen w-full bg-[#020617] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.06),transparent_50%),radial-gradient(circle_at_bottom_right,rgba(79,70,229,0.06),transparent_50%)] pointer-events-none"></div>
+      
+      <div className="w-full max-w-[320px] space-y-5 animate-in fade-in zoom-in-95 duration-500 relative z-10">
+        <div className="text-center space-y-2">
+          <div className="w-14 h-14 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-[0_12px_24px_-4px_rgba(56,189,248,0.4)] transform hover:scale-105 transition-transform mb-2">
+            <Building2 size={28} className="text-white" />
           </div>
-          <h1 className="text-4xl font-black text-white tracking-tight">Life CEO</h1>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">
-            {isLogin ? 'Terminal de Acesso' : 'Registro de Novo Executivo'}
-          </p>
+          <div>
+            <h1 className="text-3xl font-black text-white tracking-tighter">Life <span className="ceo-gradient-text">CEO</span></h1>
+            <p className="text-slate-600 font-bold uppercase tracking-[0.2em] text-[8px]">Operating Environment</p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-slate-900/50 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl backdrop-blur-xl space-y-6">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="ceo-glass p-5 rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.5)] space-y-4">
+          <div className="space-y-3">
             {!isLogin && (
-              <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Nome do CEO</label>
+              <div className="space-y-1 animate-in slide-in-from-top-1">
+                <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest ml-1">Líder CEO</label>
                 <div className="relative">
-                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={20} />
+                  <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
                   <input
                     required
                     value={ceoName}
                     onChange={e => setCeoName(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
-                    placeholder="Ex: Marcus Aurelius"
+                    className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-9 pr-4 text-white text-xs focus:ring-1 focus:ring-sky-500/50 outline-none transition-all font-semibold"
+                    placeholder="Nome"
                   />
                 </div>
               </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Usuário / ID</label>
+            <div className="space-y-1">
+              <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest ml-1">ID de Sistema</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={20} />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
                 <input
                   required
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
-                  placeholder="ID corporativo"
+                  className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-9 pr-4 text-white text-xs focus:ring-1 focus:ring-sky-500/50 outline-none transition-all font-semibold"
+                  placeholder="ID Usuário"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Chave de Segurança</label>
+            <div className="space-y-1">
+              <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest ml-1">Criptografia</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={20} />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
                 <input
                   required
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
-                  placeholder="••••••••"
+                  className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-9 pr-4 text-white text-xs focus:ring-1 focus:ring-sky-500/50 outline-none transition-all font-semibold"
+                  placeholder="Senha"
                 />
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl text-red-400 text-xs font-bold text-center">
+            <div className="bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-lg text-rose-400 text-[9px] font-bold text-center animate-pulse">
               {error}
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-3 active:scale-95"
+            className="w-full bg-gradient-to-r from-sky-400 to-indigo-600 text-white font-black py-3 rounded-xl transition-all shadow-lg active:scale-95 transform text-[10px] tracking-[0.2em]"
           >
-            {isLogin ? 'AUTENTICAR' : 'REGISTRAR CEO'} <ArrowRight size={20} />
+            {isLogin ? 'AUTENTICAR' : 'ATIVAR CEO'}
           </button>
         </form>
 
-        <div className="text-center">
+        <div className="flex flex-col gap-3 items-center">
           <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError('');
-            }}
-            className="text-slate-500 hover:text-blue-400 text-xs font-black uppercase tracking-widest transition-colors"
+            onClick={() => { setIsLogin(!isLogin); setError(''); }}
+            className="text-slate-600 hover:text-sky-400 text-[9px] font-black uppercase tracking-[0.1em] transition-colors"
           >
-            {isLogin ? 'Não possui uma conta? Registre-se' : 'Já possui conta? Faça Login'}
+            {isLogin ? 'Criar Novo Registro Corporativo' : 'Voltar para Login de Acesso'}
           </button>
+          
+          <div className="w-full h-[1px] bg-white/5 my-1"></div>
+          
+          <button
+            onClick={() => importInputRef.current?.click()}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+          >
+            <Upload size={14} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Importar Banco Externo</span>
+          </button>
+          <input type="file" ref={importInputRef} onChange={handleQuickImport} accept=".json" className="hidden" />
         </div>
 
-        <div className="flex items-center justify-center gap-2 opacity-30">
-          <ShieldCheck size={14} className="text-slate-400" />
-          <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Security Terminal v1.1 • Encrypted Data</span>
+        <div className="flex items-center justify-center gap-2 opacity-20 pt-2">
+          <ShieldCheck size={12} className="text-sky-400" />
+          <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Secure Life Architecture</span>
         </div>
       </div>
     </div>

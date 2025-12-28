@@ -1,32 +1,44 @@
 
 <!DOCTYPE html>
-<html lang="pt-BR" class="bg-slate-950">
+<html lang="pt-BR" class="bg-[#020617]">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life CEO</title>
+    <title>Life CEO | Sistema de Gestão</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+          --bg-page: #020617;
+          --bg-gradient: radial-gradient(circle at top, #0f172a 0%, #020617 55%, #000000 100%);
+        }
         body { 
-          font-family: 'Inter', sans-serif; 
+          font-family: 'Inter', -apple-system, system-ui, sans-serif; 
           -webkit-tap-highlight-color: transparent;
           overscroll-behavior: none;
+          background: var(--bg-gradient);
+          min-height: 100vh;
+          color: #F9FAFB;
+        }
+        .ceo-glass {
+          background: rgba(15, 23, 42, 0.78);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(148, 163, 184, 0.12);
+        }
+        .ceo-gradient-text {
+          background: linear-gradient(135deg, #38BDF8, #A855F7);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1e293b;
+          background: rgba(56, 189, 248, 0.2);
           border-radius: 10px;
         }
-        /* Mobile fixes for fixed elements */
-        .fixed {
-          transform: translateZ(0);
-        }
+        .fixed { transform: translateZ(0); }
     </style>
 <script type="importmap">
 {
@@ -42,7 +54,7 @@
 }
 </script>
 </head>
-<body class="bg-slate-950 text-slate-100 overflow-x-hidden">
+<body class="overflow-x-hidden selection:bg-sky-500/30">
     <div id="root"></div>
 </body>
 </html>

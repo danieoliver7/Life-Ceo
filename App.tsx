@@ -52,11 +52,11 @@ const App: React.FC = () => {
     setProfile(null);
     setTopics([]);
     setLogs([]);
+    setActiveTab('home');
   };
 
   const handleOnboardingComplete = async (newProfile: UserProfile) => {
     await CloudDB.saveProfile(newProfile);
-    // Fix: correctly access topics from newProfile now that it's defined in the interface
     await CloudDB.saveTopics(currentUser!.id, newProfile.topics);
     
     setProfile(newProfile);
@@ -66,9 +66,12 @@ const App: React.FC = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
-      <Loader2 className="text-blue-500 animate-spin" size={40} />
-      <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.4em]">Life CEO OS Loading...</p>
+    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center space-y-4">
+      <div className="relative">
+        <Loader2 className="text-sky-400 animate-spin" size={48} />
+        <div className="absolute inset-0 blur-xl bg-sky-500/20 animate-pulse"></div>
+      </div>
+      <p className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.5em] animate-pulse">Life CEO OS v2.0</p>
     </div>
   );
 
@@ -79,32 +82,37 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 pb-20 font-sans selection:bg-blue-500/30">
-      <main className="animate-in fade-in duration-700 min-h-screen">
+    <div className="min-h-screen flex flex-col text-slate-100 font-sans selection:bg-sky-500/30">
+      <main className="flex-1 animate-in fade-in duration-700">
         {activeTab === 'home' && (
-          <Floor 
-            profile={profile} 
-            topics={topics}
-            date={todayStr}
-          />
+          <Floor profile={profile} topics={topics} date={todayStr} />
         )}
         {activeTab === 'dashboard' && <Dashboard logs={logs} topics={topics} />}
         {activeTab === 'restructuring' && (
           <Restructuring 
             profile={profile} 
             onUpdateTopics={async (t) => {
-              // Fix: ensure internal state and persistent storage are synchronized correctly
               setTopics(t);
               if (profile) setProfile({ ...profile, topics: t });
               await CloudDB.saveTopics(currentUser.id, t);
             }} 
           />
         )}
-        {activeTab === 'profile' && <Profile profile={profile} logs={logs} onLogout={handleLogout} />}
+        {activeTab === 'profile' && (
+          <Profile 
+            profile={profile} 
+            logs={logs} 
+            onLogout={handleLogout} 
+            onUpdateProfile={async (p) => {
+              setProfile(p);
+              await CloudDB.saveProfile(p);
+            }}
+          />
+        )}
       </main>
 
-      {/* Navegação Mobile Ultra-Premium */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-2xl border-t border-slate-800/40 flex justify-around items-center px-2 h-24 z-50 shadow-[0_-15_40px_rgba(0,0,0,0.6)]">
+      {/* Navegação Life CEO Glass */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/60 backdrop-blur-[18px] border-t border-slate-800/40 flex justify-around items-center px-4 h-24 z-50 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
         <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<LayoutGrid />} label="Fábrica" />
         <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<BarChart3 />} label="Painel" />
         <NavButton active={activeTab === 'restructuring'} onClick={() => setActiveTab('restructuring')} icon={<Settings2 />} label="Gestão" />
@@ -117,13 +125,15 @@ const App: React.FC = () => {
 const NavButton = ({ active, onClick, icon, label }: any) => (
   <button 
     onClick={onClick} 
-    className={`flex flex-col items-center justify-center transition-all flex-1 h-full relative group ${active ? 'text-blue-400' : 'text-slate-600 hover:text-slate-400'}`}
+    className={`flex flex-col items-center justify-center transition-all flex-1 h-full relative group ${active ? 'text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
   >
-    {active && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-500 rounded-b-full shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-in slide-in-from-top-1"></div>}
-    <div className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-active:scale-90'}`}>
+    {active && (
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-sky-400 rounded-b-full shadow-[0_4px_12px_rgba(56,189,248,0.6)] animate-in slide-in-from-top-1"></div>
+    )}
+    <div className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-105'}`}>
       {React.cloneElement(icon, { size: active ? 26 : 22, strokeWidth: active ? 2.5 : 1.5 })}
     </div>
-    <span className={`text-[9px] font-black uppercase tracking-[0.2em] mt-2 transition-all ${active ? 'opacity-100 translate-y-0' : 'opacity-40 translate-y-1'}`}>
+    <span className={`text-[10px] font-bold uppercase tracking-[0.1em] mt-2 transition-all ${active ? 'opacity-100' : 'opacity-40 group-hover:opacity-60'}`}>
       {label}
     </span>
   </button>

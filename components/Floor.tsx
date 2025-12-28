@@ -4,7 +4,7 @@ import { Topic, DayLog, LogEntry, UserProfile, SubAction } from '../types';
 import { CloudDB } from '../services/database';
 import { 
   CheckCircle2, Circle, ChevronDown, ChevronUp, 
-  Plus, ListFilter, Zap, Target, Loader2, Info, X
+  Plus, ListFilter, Zap, Target, Loader2, X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -64,7 +64,7 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date }) => {
   const toggleAction = async (entry: LogEntry) => {
     const updatedEntry = { ...entry, isCompleted: !entry.isCompleted };
     if (updatedEntry.isCompleted) {
-      confetti({ particleCount: 25, spread: 50, origin: { y: 0.8 }, colors: ['#3b82f6', '#10b981'] });
+      confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 }, colors: ['#38BDF8', '#4F46E5'] });
     }
     const newEntries = entries.map(e => e.id === entry.id ? updatedEntry : e);
     setEntries(newEntries);
@@ -94,7 +94,6 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date }) => {
 
   const scheduleFromBank = async (topicId: string, action: SubAction) => {
     if (!log) return;
-    
     if (entries.some(e => e.actionId === action.id)) return;
 
     const newEntry: LogEntry = {
@@ -128,153 +127,148 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date }) => {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500">
-      <Loader2 className="animate-spin mb-4" size={32} />
-      <p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Sincronizando Banco de Dados...</p>
+    <div className="flex flex-col items-center justify-center h-[60vh]">
+      <Loader2 className="animate-spin text-sky-400 mb-4" size={32} />
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Sincronizando Sistema</p>
     </div>
   );
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
-      {/* CABEÇALHO FIXO (Fábrica) */}
-      <header className="px-5 pt-8 pb-4 shrink-0 bg-slate-950/80 backdrop-blur-xl z-20 border-b border-slate-900 flex justify-between items-center">
+      {/* Life CEO Header */}
+      <header className="px-6 pt-10 pb-6 shrink-0 bg-slate-950/40 backdrop-blur-xl z-20 border-b border-white/5 flex justify-between items-end">
         <div>
-          <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Terminal CEO</p>
-          <h1 className="text-2xl font-black text-white leading-none">
-            {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace('.', '')}
+          <p className="text-sky-400 text-[10px] font-bold uppercase tracking-[0.25em] mb-1.5">Métricas Operacionais</p>
+          <h1 className="text-3xl font-bold text-white leading-none tracking-tight">
+            {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' }).replace(',', '')}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-2xl shadow-2xl relative group">
-            <div className="absolute inset-0 bg-blue-500/5 blur-xl group-hover:bg-blue-500/10 transition-all"></div>
-            <p className="text-[7px] text-slate-500 font-black uppercase mb-0.5 tracking-tighter">Performance</p>
-            <span className={`text-xl font-black block leading-none ${log!.score >= 70 ? 'text-emerald-400' : 'text-blue-400'}`}>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-sky-400/20 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative bg-slate-900/80 border border-sky-500/30 px-5 py-3 rounded-2xl flex flex-col items-center min-w-[90px] backdrop-blur-md">
+            <p className="text-[9px] text-sky-300/70 font-bold uppercase tracking-widest mb-0.5">Nota</p>
+            <span className={`text-2xl font-bold ${log!.score >= 70 ? 'text-emerald-400' : 'text-sky-400'}`}>
               {log!.score}
             </span>
           </div>
         </div>
       </header>
 
-      {/* ÁREA DE SCROLL (Departamentos) */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-20 custom-scrollbar">
-        <div className="space-y-3 max-w-2xl mx-auto">
-          {topics.map(topic => {
-            const isExpanded = expandedTopics.has(topic.id);
-            const topicEntries = entries.filter(e => e.topicId === topic.id);
-            const completed = topicEntries.filter(e => e.isCompleted).length;
-            
-            return (
-              <div key={topic.id} className={`bg-slate-900/40 border transition-all duration-300 rounded-[2rem] overflow-hidden backdrop-blur-sm ${isExpanded ? 'border-blue-500/30 bg-slate-900/80' : 'border-slate-800/50'}`}>
-                <div 
-                  onClick={() => toggleTopic(topic.id)}
-                  className="p-4 flex justify-between items-center cursor-pointer active:scale-[0.98] transition-transform"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shadow-inner ${topicEntries.length > 0 ? 'bg-blue-600' : 'bg-slate-800'}`}>
-                      <span className="text-white text-[10px] font-black leading-none">{completed}</span>
-                      <div className="w-4 h-[1px] bg-white/30 my-1"></div>
-                      <span className="text-white/60 text-[8px] font-bold leading-none">{topicEntries.length}</span>
-                    </div>
-                    <div>
-                      <h3 className="font-black text-white text-sm uppercase tracking-wide">{topic.name}</h3>
-                      <p className={`text-[9px] font-black uppercase tracking-tighter mt-0.5 ${topicEntries.length === 0 ? 'text-slate-600' : 'text-slate-500'}`}>
-                        {topicEntries.length === 0 ? "Setor sem agendamento" : `${Math.round((completed/topicEntries.length)*100 || 0)}% Eficiência`}
+      {/* Tópicos List */}
+      <div className="flex-1 overflow-y-auto px-5 pt-6 pb-24 custom-scrollbar space-y-4">
+        {topics.map(topic => {
+          const isExpanded = expandedTopics.has(topic.id);
+          const topicEntries = entries.filter(e => e.topicId === topic.id);
+          const completed = topicEntries.filter(e => e.isCompleted).length;
+          
+          return (
+            <div 
+              key={topic.id} 
+              className={`ceo-glass rounded-[2rem] overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-2 ring-sky-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'hover:scale-[1.01]'}`}
+            >
+              <div 
+                onClick={() => toggleTopic(topic.id)}
+                className="p-5 flex justify-between items-center cursor-pointer active:bg-white/5"
+              >
+                <div className="flex items-center gap-5">
+                  <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center transition-all ${topicEntries.length > 0 ? 'bg-gradient-to-br from-sky-400 to-indigo-600 shadow-[0_10px_20px_rgba(56,189,248,0.3)]' : 'bg-slate-800'}`}>
+                    <span className="text-white text-[11px] font-black leading-none">{completed}</span>
+                    <div className="w-4 h-[1px] bg-white/40 my-1"></div>
+                    <span className="text-white/60 text-[9px] font-bold leading-none">{topicEntries.length}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-[15px] uppercase tracking-wide">{topic.name}</h3>
+                    <p className={`text-[10px] font-bold uppercase tracking-tight mt-1 ${topicEntries.length === 0 ? 'text-slate-600' : 'text-sky-400/60'}`}>
+                      {topicEntries.length === 0 ? "Em espera" : `${Math.round((completed/topicEntries.length)*100 || 0)}% Eficiência`}
+                    </p>
+                  </div>
+                </div>
+                {isExpanded ? <ChevronUp size={22} className="text-slate-600" /> : <ChevronDown size={22} className="text-slate-600" />}
+              </div>
+
+              {isExpanded && (
+                <div className="px-6 pb-8 pt-2 space-y-6 animate-in slide-in-from-top-1 duration-200">
+                  <div className="h-[1px] bg-white/5 w-full"></div>
+                  
+                  {topicEntries.length === 0 ? (
+                    <div className="bg-slate-950/40 border border-dashed border-slate-800 rounded-3xl p-10 text-center">
+                      <p className="text-[11px] text-slate-500 font-bold uppercase tracking-[0.15em] leading-relaxed">
+                        Nenhum fluxo de trabalho<br/>definido para hoje.
                       </p>
                     </div>
-                  </div>
-                  {isExpanded ? <ChevronUp size={20} className="text-slate-600" /> : <ChevronDown size={20} className="text-slate-600" />}
-                </div>
-
-                {isExpanded && (
-                  <div className="px-5 pb-8 pt-2 space-y-5 animate-in slide-in-from-top-1 duration-200">
-                    <div className="h-[1px] bg-slate-800/50 w-full mb-1"></div>
-                    
-                    {topicEntries.length === 0 ? (
-                      <div className="bg-slate-950/30 border border-dashed border-slate-800 rounded-2xl p-8 text-center">
-                        <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em] italic leading-relaxed">
-                          Aguardando definição<br/>de escopo diário.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {topicEntries.map(entry => (
-                          <div key={entry.id} className="flex items-center gap-4 bg-slate-800/30 p-4 rounded-2xl border border-slate-800/20 group">
-                            <button onClick={() => toggleAction(entry)} className="shrink-0 transition-transform active:scale-90">
-                              {entry.isCompleted ? 
-                                <CheckCircle2 className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" size={28} /> : 
-                                <Circle className="text-slate-700" size={28} />
-                              }
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              <span className={`text-[13px] font-bold block truncate transition-all ${entry.isCompleted ? 'text-slate-600 line-through' : 'text-slate-200'}`}>
-                                {entry.name}
-                              </span>
-                            </div>
-                            <button 
-                              onClick={() => removeEntry(entry.id)}
-                              className="p-2 text-slate-800 hover:text-red-500 transition-colors"
-                            >
-                              <X size={18} />
-                            </button>
+                  ) : (
+                    <div className="space-y-3">
+                      {topicEntries.map(entry => (
+                        <div key={entry.id} className="flex items-center gap-4 bg-slate-900/40 p-5 rounded-[1.5rem] border border-white/5 group hover:border-white/10 transition-all">
+                          <button onClick={() => toggleAction(entry)} className="shrink-0 transition-transform active:scale-90">
+                            {entry.isCompleted ? 
+                              <CheckCircle2 className="text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.4)]" size={28} /> : 
+                              <Circle className="text-slate-700 hover:text-slate-600" size={28} />
+                            }
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-[14px] font-medium block truncate transition-all ${entry.isCompleted ? 'text-slate-600 line-through' : 'text-slate-200'}`}>
+                              {entry.name}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <input 
-                        value={adHocInput[topic.id] || ''}
-                        onChange={e => setAdHocInput({...adHocInput, [topic.id]: e.target.value})}
-                        onKeyPress={e => e.key === 'Enter' && addAdHoc(topic.id)}
-                        placeholder="Novo Processo Ad-hoc..."
-                        className="flex-1 bg-slate-950/40 border border-slate-800 rounded-2xl px-5 py-3.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none font-bold text-white placeholder:text-slate-800"
-                      />
-                      <button 
-                        onClick={() => addAdHoc(topic.id)}
-                        className="bg-blue-600/10 p-3 rounded-2xl text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-xl shadow-blue-500/5"
-                      >
-                        <Plus size={24} />
-                      </button>
+                          <button onClick={() => removeEntry(entry.id)} className="p-2 text-slate-700 hover:text-rose-400 transition-colors">
+                            <X size={20} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
+                  )}
 
+                  <div className="flex gap-3">
+                    <input 
+                      value={adHocInput[topic.id] || ''}
+                      onChange={e => setAdHocInput({...adHocInput, [topic.id]: e.target.value})}
+                      onKeyPress={e => e.key === 'Enter' && addAdHoc(topic.id)}
+                      placeholder="Tarefa ad-hoc..."
+                      className="flex-1 bg-slate-950/60 border border-white/5 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-sky-500/40 outline-none font-medium text-white placeholder:text-slate-700 transition-all"
+                    />
                     <button 
-                      onClick={() => setShowSelectorFor(topic.id)}
-                      className="w-full bg-white text-slate-950 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 shadow-2xl shadow-white/5 active:scale-95 transition-all"
+                      onClick={() => addAdHoc(topic.id)}
+                      className="bg-sky-500 text-slate-950 p-4 rounded-2xl hover:brightness-110 active:scale-95 transition-all shadow-[0_10px_20px_rgba(56,189,248,0.2)]"
                     >
-                      <ListFilter size={18} /> Agendar do Banco
+                      <Plus size={24} strokeWidth={3} />
                     </button>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+
+                  <button 
+                    onClick={() => setShowSelectorFor(topic.id)}
+                    className="w-full bg-gradient-to-r from-[#38BDF8] to-[#4F46E5] text-white py-5 rounded-[1.5rem] text-[12px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-3 shadow-[0_15px_40px_rgba(56,189,248,0.3)] active:scale-98 transition-all"
+                  >
+                    <ListFilter size={20} /> Agendar do Banco
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* MODAL DE AGENDAMENTO */}
       {showSelectorFor && (
-        <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-2xl p-5 flex items-center justify-center animate-in fade-in duration-300">
-          <div className="bg-slate-900 w-full max-w-sm rounded-[3rem] border border-slate-800 p-8 shadow-2xl space-y-8 relative overflow-hidden">
-            {/* Botão X Vermelho - Fixando pedido */}
+        <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-2xl p-6 flex items-center justify-center animate-in fade-in duration-300">
+          <div className="bg-slate-900/98 w-full max-w-sm rounded-[3rem] border border-white/10 p-10 shadow-2xl relative overflow-visible">
             <button 
               onClick={() => setShowSelectorFor(null)}
-              className="absolute top-6 right-6 w-10 h-10 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full flex items-center justify-center shadow-lg active:bg-red-500 active:text-white transition-all z-10"
-              title="Cancelar"
+              className="absolute -top-4 -right-4 w-12 h-12 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl shadow-rose-500/40 hover:scale-110 active:scale-90 transition-all z-10"
             >
               <X size={24} strokeWidth={3} />
             </button>
 
-            <div className="flex items-center gap-5">
-              <div className="bg-blue-600/20 p-4 rounded-3xl shadow-lg">
-                <Target className="text-blue-500" size={28} />
+            <div className="flex items-center gap-5 mb-10">
+              <div className="bg-sky-500/20 p-4 rounded-[1.5rem]">
+                <Target className="text-sky-400" size={32} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none mb-1">Escopo</h3>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.1em]">Selecione KPIs do Banco</p>
+                <h3 className="text-2xl font-bold text-white uppercase tracking-tight leading-none mb-1">Banco</h3>
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">Defina o escopo</p>
               </div>
             </div>
             
-            <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-2 custom-scrollbar border-y border-slate-800/50 py-4">
+            <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar border-y border-white/5 py-6">
               {topics.find(t => t.id === showSelectorFor)?.actions.map(action => {
                 const isAlreadyInLog = entries.some(e => e.actionId === action.id);
                 return (
@@ -282,10 +276,10 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date }) => {
                     key={action.id}
                     disabled={isAlreadyInLog}
                     onClick={() => scheduleFromBank(showSelectorFor, action)}
-                    className={`w-full text-left p-5 rounded-2xl border transition-all flex justify-between items-center group ${isAlreadyInLog ? 'bg-slate-800/20 border-slate-800 opacity-40' : 'bg-slate-800/40 border-slate-700 hover:border-blue-500'}`}
+                    className={`w-full text-left p-5 rounded-2xl border transition-all flex justify-between items-center group ${isAlreadyInLog ? 'bg-slate-800/20 border-white/5 opacity-40' : 'bg-slate-800/60 border-white/10 hover:border-sky-500/50 hover:bg-slate-800/80'}`}
                   >
-                    <span className="font-black text-[13px] uppercase text-slate-300 tracking-tight">{action.name}</span>
-                    <Zap size={14} className={isAlreadyInLog ? 'text-slate-600' : 'text-blue-500 group-hover:scale-125 transition-transform'} />
+                    <span className="font-bold text-[14px] uppercase text-slate-200 tracking-tight">{action.name}</span>
+                    {!isAlreadyInLog && <Zap size={16} className="text-sky-400 group-hover:scale-125 transition-transform" />}
                   </button>
                 );
               })}
@@ -293,7 +287,7 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date }) => {
 
             <button 
               onClick={() => setShowSelectorFor(null)}
-              className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-[0_20px_40px_rgba(37,99,235,0.2)] active:scale-95 transition-all"
+              className="w-full bg-sky-500 text-slate-950 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[12px] shadow-[0_20px_40px_rgba(56,189,248,0.25)] active:scale-95 transition-all mt-8"
             >
               Confirmar Operação
             </button>
