@@ -65,7 +65,9 @@ const Dashboard: React.FC<DashboardProps> = ({ logs, topics }) => {
                 </div>
               ) : (
                 <div className="flex flex-col">
-                  <span className="text-6xl font-black text-amber-500 leading-none">-{gapToGoal}%</span>
+                  <span className={`text-6xl font-black ${gapToGoal > 50 ? 'text-rose-500' : 'text-amber-500'} leading-none`}>
+                    {gapToGoal}%
+                  </span>
                   <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-3">Para a Meta do Dia</span>
                 </div>
               )}

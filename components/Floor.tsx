@@ -144,8 +144,8 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date, onRefreshLogs }) =
       <header className="px-6 pt-10 pb-6 shrink-0 bg-slate-950/40 backdrop-blur-xl z-20 border-b border-white/5 flex justify-between items-end">
         <div>
           <p className="text-sky-400 text-[10px] font-bold uppercase tracking-[0.25em] mb-1.5">Métricas Operacionais</p>
-          <h1 className="text-3xl font-bold text-white leading-none tracking-tight">
-            {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' }).replace(',', '')}
+          <h1 className="text-2xl font-bold text-white leading-none tracking-tight capitalize">
+            {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(date + 'T12:00:00'))}
           </h1>
         </div>
         <div className="relative group">
