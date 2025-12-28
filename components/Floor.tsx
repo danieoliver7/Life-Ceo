@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Topic, DayLog, LogEntry, UserProfile, SubAction } from '../types';
 import { CloudDB } from '../services/database';
 import { 
   CheckCircle2, Circle, ChevronDown, ChevronUp, 
-  Plus, ListFilter, Target, Loader2, X, Check
+  Plus, ListFilter, Target, Loader2, X, Check, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -13,15 +13,21 @@ interface FloorProps {
   topics: Topic[];
   date: string;
   onRefreshLogs: () => void;
+  onNavigateDate: (offset: number) => void;
 }
 
-const Floor: React.FC<FloorProps> = ({ profile, topics, date, onRefreshLogs }) => {
+const Floor: React.FC<FloorProps> = ({ profile, topics, date, onRefreshLogs, onNavigateDate }) => {
   const [log, setLog] = useState<DayLog | null>(null);
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
   const [showSelectorFor, setShowSelectorFor] = useState<string | null>(null);
   const [adHocInput, setAdHocInput] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  
+  // Swipe Logic
+  const touchStart = useRef<number | null>(null);
+  const touchEnd = useRef<number | null>(null);
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     loadDailyData();
@@ -61,7 +67,29 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date, onRefreshLogs }) =
     const updatedLog: DayLog = { ...currentLog, score: finalScore, topicScores, completedActions };
     setLog(updatedLog);
     await CloudDB.saveLogHeader(updatedLog);
-    onRefreshLogs(); // Atualiza dashboard instantaneamente
+    onRefreshLogs();
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEnd.current = null;
+    touchStart.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEnd.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart.current || !touchEnd.current) return;
+    const distance = touchStart.current - touchEnd.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      onNavigateDate(1); // Próximo dia
+    } else if (isRightSwipe) {
+      onNavigateDate(-1); // Dia anterior
+    }
   };
 
   const toggleAction = async (entry: LogEntry) => {
@@ -88,7 +116,6 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date, onRefreshLogs }) =
 
   const scheduleFromBank = async (topicId: string, action: SubAction) => {
     if (!log) return;
-    // Evita duplicatas de ações do banco no mesmo dia
     if (entries.some(e => e.actionId === action.id)) return;
 
     const newEntry: LogEntry = { 
@@ -120,6 +147,14 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date, onRefreshLogs }) =
     setExpandedTopics(newSet);
   };
 
+  const formattedDate = useMemo(() => {
+    const d = new Date(date + 'T12:00:00');
+    const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(d);
+    const day = d.getDate();
+    const month = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(d);
+    return `${weekday}, ${day} de ${month}`;
+  }, [date]);
+
   const sortedTopics = useMemo(() => {
     return [...topics].sort((a, b) => {
       const aEntries = entries.filter(e => e.topicId === a.id);
@@ -140,13 +175,24 @@ const Floor: React.FC<FloorProps> = ({ profile, topics, date, onRefreshLogs }) =
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
+    <div 
+      className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       <header className="px-6 pt-10 pb-6 shrink-0 bg-slate-950/40 backdrop-blur-xl z-20 border-b border-white/5 flex justify-between items-end">
-        <div>
+        <div className="flex-1">
           <p className="text-sky-400 text-[10px] font-bold uppercase tracking-[0.25em] mb-1.5">Métricas Operacionais</p>
-          <h1 className="text-2xl font-bold text-white leading-none tracking-tight capitalize">
-            {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(date + 'T12:00:00'))}
-          </h1>
+          <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onNavigateDate(-1)}>
+            <h1 className="text-xl font-bold text-white leading-none tracking-tight capitalize">
+              {formattedDate}
+            </h1>
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+               <ChevronLeft size={14} className="text-slate-500" />
+               <ChevronRight size={14} className="text-slate-500" onClick={(e) => {e.stopPropagation(); onNavigateDate(1);}} />
+            </div>
+          </div>
         </div>
         <div className="relative group">
           <div className="absolute inset-0 bg-sky-400/20 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>

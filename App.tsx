@@ -17,8 +17,9 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<DayLog[]>([]);
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [loading, setLoading] = useState(true);
-
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  
+  // Estado da data selecionada (Padrão: Hoje)
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('life_ceo_session');
@@ -60,6 +61,7 @@ const App: React.FC = () => {
     setTopics([]);
     setLogs([]);
     setActiveTab('home');
+    setSelectedDate(new Date().toISOString().split('T')[0]);
   };
 
   const handleOnboardingComplete = async (newProfile: UserProfile) => {
@@ -70,6 +72,12 @@ const App: React.FC = () => {
     setTopics(newProfile.topics);
     const updatedLogs = await CloudDB.getAllLogs(currentUser!.id);
     setLogs(updatedLogs);
+  };
+
+  const changeDay = (offset: number) => {
+    const d = new Date(selectedDate + 'T12:00:00');
+    d.setDate(d.getDate() + offset);
+    setSelectedDate(d.toISOString().split('T')[0]);
   };
 
   if (loading) return (
@@ -95,8 +103,9 @@ const App: React.FC = () => {
           <Floor 
             profile={profile} 
             topics={topics} 
-            date={todayStr} 
+            date={selectedDate} 
             onRefreshLogs={refreshLogs} 
+            onNavigateDate={changeDay}
           />
         )}
         {activeTab === 'dashboard' && <Dashboard logs={logs} topics={topics} />}
